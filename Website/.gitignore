@@ -1,0 +1,36 @@
+node_modules/
+# Dependency directories
+/.pnp
+.pnp.js
+
+# Build output
+/dist/
+/build/
+/.next/
+
+# Production files
+/.vercel/
+/.firebase/
+
+# Environment files (contain secrets)
+.env
+.env.*
+
+# Local IDE settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+logs/
+*.log
+
+# Misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
