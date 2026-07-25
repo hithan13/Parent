@@ -44,12 +44,36 @@ const formatStatusText = (status: string) => {
   return status.toUpperCase().replace(/_/g, ' ');
 };
 
+const getLatestActivityTimestamp = (device: any): number => {
+  if (!device) return 0;
+  let maxTime = device.lastSeen || 0;
+  if (device.dataUsage?.timestamp) {
+    maxTime = Math.max(maxTime, device.dataUsage.timestamp);
+  }
+  if (device.deployStatus?.timestamp) {
+    maxTime = Math.max(maxTime, device.deployStatus.timestamp);
+  }
+  if (device.screenTimeUsage) {
+    const dates = Object.keys(device.screenTimeUsage);
+    for (const d of dates) {
+      const ts = device.screenTimeUsage[d]?.timestamp;
+      if (ts) maxTime = Math.max(maxTime, Number(ts));
+    }
+  }
+  return maxTime;
+};
+
+const isDeviceOnline = (device: any, thresholdMs: number = 10 * 60 * 1000): boolean => {
+  const latest = getLatestActivityTimestamp(device);
+  return latest > 0 && (Date.now() - latest < thresholdMs);
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [deviceData, setDeviceData] = useState<any>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
-  const [availableDevices, setAvailableDevices] = useState<{id: string, lastSeen: number, deviceName: string, deviceType: string}[]>([]);
+  const [availableDevices, setAvailableDevices] = useState<{id: string, lastSeen: number, deviceName: string, deviceType: string, isOnline: boolean}[]>([]);
   
   // File upload state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -67,14 +91,16 @@ function App() {
         const devices = snapshot.val();
         if (devices) {
           // Store all available devices for the dropdown
-          const devs: {id: string, lastSeen: number, deviceName: string, deviceType: string}[] = [];
+          const devs: {id: string, lastSeen: number, deviceName: string, deviceType: string, isOnline: boolean}[] = [];
           Object.entries(devices).forEach(([id, device]: [string, any]) => {
             if (id !== 'test_device_001') {
+              const latest = getLatestActivityTimestamp(device);
               devs.push({
                 id,
-                lastSeen: device.lastSeen || 0,
+                lastSeen: latest,
                 deviceName: device.deviceName || id.substring(0, 8) + '...',
                 deviceType: device.deviceType || 'device',
+                isOnline: isDeviceOnline(device),
               });
             }
           });
@@ -449,11 +475,23 @@ function App() {
             <div className="header">
               <h1>Device Overview</h1>
               <p>Manage and monitor connected child devices</p>
-              <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: (deviceData && deviceData.lastSeen && Date.now() - deviceData.lastSeen < 2*60*1000) ? '#22c55e' : '#ef4444', marginRight: '6px' }}></span>
-                <span style={{ color: (deviceData && deviceData.lastSeen && Date.now() - deviceData.lastSeen < 2*60*1000) ? '#22c55e' : '#ef4444' }}>
-                  {deviceData && deviceData.lastSeen && Date.now() - deviceData.lastSeen < 2*60*1000 ? 'Online' : 'Offline'}
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px', gap: '8px' }}>
+                <span style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  background: isDeviceOnline(deviceData) ? '#22c55e' : '#ef4444',
+                  marginRight: '6px',
+                  boxShadow: isDeviceOnline(deviceData) ? '0 0 8px rgba(34, 197, 94, 0.6)' : 'none'
+                }}></span>
+                <span style={{ color: isDeviceOnline(deviceData) ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: '14px' }}>
+                  {isDeviceOnline(deviceData) ? 'Online (Connected)' : 'Offline (No Heartbeat > 10m)'}
                 </span>
+                {getLatestActivityTimestamp(deviceData) > 0 && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: '6px' }}>
+                    • Last active: {new Date(getLatestActivityTimestamp(deviceData)).toLocaleTimeString()}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -977,17 +1015,18 @@ function App() {
                 >
                   <span style={{
                     width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                    background: dev.deviceType === 'emulator' ? '#f59e0b' : '#22c55e',
+                    background: dev.isOnline ? '#22c55e' : '#ef4444',
+                    boxShadow: dev.isOnline ? '0 0 6px rgba(34,197,94,0.6)' : 'none'
                   }} />
                   {dev.deviceName}
                   <span style={{
                     fontSize: '10px',
                     padding: '1px 6px',
                     borderRadius: '10px',
-                    background: dev.deviceType === 'emulator' ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.15)',
-                    color: dev.deviceType === 'emulator' ? '#fbbf24' : '#4ade80',
+                    background: dev.isOnline ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                    color: dev.isOnline ? '#4ade80' : '#f87171',
                   }}>
-                    {dev.deviceType === 'emulator' ? 'Emulator' : 'Real Device'}
+                    {dev.isOnline ? 'Online' : 'Offline'}
                   </span>
                 </button>
               ))}
