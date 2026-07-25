@@ -863,18 +863,22 @@ function App() {
               </button>
             </div>
 
-            <div className="card glass-panel">
+            <div className="card glass-panel" style={{ marginBottom: '24px' }}>
               <div className="card-header">
                 <UploadCloud className="card-icon" />
-                Large APKs (Paste Direct Link)
+                Deploy via Direct Link (Dropbox / Cloud URL)
               </div>
               <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '12px', marginBottom: '20px' }}>
-                For files up to 50MB+ (like APKs), upload them to Google Drive or Dropbox, copy the direct link, and paste it here.
+                Paste a direct download URL from <strong style={{ color: 'white' }}>Dropbox</strong> (change dl=0 to dl=1) or <strong style={{ color: 'white' }}>GitHub Releases</strong>. 
+                <br />
+                <span style={{ color: '#fbbf24', fontSize: '12px', display: 'inline-block', marginTop: '6px' }}>
+                  ⚠️ Note: Google Drive redirects automated APK downloads to a login page. For local APK files, please use the <strong>Upload App / APK</strong> box above.
+                </span>
               </p>
               
               <input 
                 type="text" 
-                placeholder="https://drive.google.com/..." 
+                placeholder="https://www.dropbox.com/.../app.apk?dl=1" 
                 style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white', marginBottom: '16px' }}
                 value={deployUrl}
                 onChange={(e) => setDeployUrl(e.target.value)}
