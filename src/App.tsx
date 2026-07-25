@@ -275,6 +275,11 @@ function App() {
       let finalUrl = deployUrl.trim();
       let type = 'apk'; // Default to apk since this is in the Large APKs section
       
+      // Auto-convert standard GitHub web/blob URLs to raw direct download URLs
+      if (finalUrl.includes('github.com') && finalUrl.includes('/blob/')) {
+        finalUrl = finalUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      }
+      
       // Transform Google Drive links to direct downloads with confirm=t to bypass virus scan warning
       const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
       if (driveMatch && driveMatch[1]) {
@@ -310,6 +315,12 @@ function App() {
     if (!window.confirm('This will silently install the new version of the Guardian MDM app on the child device. The service will restart automatically. Continue?')) return;
     try {
       let finalUrl = selfUpdateUrl.trim();
+      
+      // Auto-convert standard GitHub web/blob URLs to raw direct download URLs
+      if (finalUrl.includes('github.com') && finalUrl.includes('/blob/')) {
+        finalUrl = finalUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      }
+      
       // Transform Google Drive share links to direct download
       const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
       if (driveMatch && driveMatch[1]) {
