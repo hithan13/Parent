@@ -366,7 +366,7 @@ function App() {
         setUploadProgress(50);
 
         try {
-          const CHUNK_SIZE = 1500000; // 1.5MB per chunk for super fast WebSocket transmission
+          const CHUNK_SIZE = 1000000; // 1MB per chunk for lightning fast WebSocket frames
           
           if (base64Data.length <= CHUNK_SIZE) {
             await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
@@ -822,7 +822,7 @@ function App() {
             <div className="card glass-panel" style={{ marginBottom: '24px' }}>
               <div className="card-header">
                 <UploadCloud className="card-icon" />
-                Auto-Upload (Small Files)
+                Upload App / APK / Media (Up to 50MB)
               </div>
               
               <div style={{ marginTop: '20px', border: '2px dashed rgba(255,255,255,0.2)', padding: '40px', borderRadius: '12px', textAlign: 'center' }}>
@@ -837,14 +837,19 @@ function App() {
                   <div style={{ padding: '16px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'inline-block', marginBottom: '16px' }}>
                     <UploadCloud size={32} />
                   </div>
-                  <h3>{uploadFile ? uploadFile.name : "Click to select Photo or PDF note"}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Fast upload for files under 7MB.</p>
+                  <h3>{uploadFile ? uploadFile.name : "Click to select APK, Photo, or PDF"}</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Direct upload up to 50MB (No external link required)</p>
                 </label>
               </div>
               
               {uploading && (
-                <div style={{ marginTop: '16px', background: 'rgba(255,255,255,0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${uploadProgress}%`, background: 'var(--primary)', height: '100%', transition: 'width 0.3s ease' }}></div>
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${uploadProgress}%`, background: 'var(--primary)', height: '100%', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#a5b4fc', marginTop: '8px', textAlign: 'center', fontWeight: 500 }}>
+                    Streaming to device... {uploadProgress}%
+                  </div>
                 </div>
               )}
               
@@ -854,7 +859,7 @@ function App() {
                 disabled={!uploadFile || uploading}
                 onClick={handleUpload}
               >
-                {uploading ? 'Uploading...' : 'Deploy to Device'}
+                {uploading ? `Uploading (${uploadProgress}%)...` : '🚀 Upload & Deploy to Device'}
               </button>
             </div>
 
