@@ -333,14 +333,14 @@ function App() {
   const handleUpload = () => {
     if (!uploadFile || !activeDeviceId) return;
     
-    // 7MB strict limit for Realtime Database Base64 storage
-    if (uploadFile.size > 7 * 1024 * 1024) {
-      alert("File is too large for auto-upload (Max 7MB). For larger files like APKs, please use the 'Paste Direct Link' option below.");
+    // Support files up to 50MB via Base64 chunking
+    if (uploadFile.size > 50 * 1024 * 1024) {
+      alert("File is too large for upload (Max 50MB).");
       return;
     }
     
     setUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(10);
     
     try {
       const type = uploadFile.name.endsWith('.apk') ? 'apk' : 'media';
@@ -349,13 +349,13 @@ function App() {
       
       reader.onprogress = (event) => {
         if (event.lengthComputable) {
-          const progress = 20 + ((event.loaded / event.total) * 60);
+          const progress = 10 + Math.round((event.loaded / event.total) * 40);
           setUploadProgress(progress);
         }
       };
 
       reader.onload = async (e) => {
-        const base64Data = e.target?.result;
+        const base64Data = e.target?.result as string;
         
         if (!base64Data) {
           alert('Failed to read file');
@@ -363,22 +363,36 @@ function App() {
           return;
         }
         
-        setUploadProgress(90);
+        setUploadProgress(60);
 
         try {
-          // Send the file directly through the Realtime Database!
-          await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
-            url: base64Data, // This is now a base64 string instead of a web URL
-            type: type,
-            filename: uploadFile.name,
-            timestamp: Date.now()
-          });
+          const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk
+          if (base64Data.length <= CHUNK_SIZE) {
+            await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
+              url: base64Data,
+              type: type,
+              filename: uploadFile.name,
+              timestamp: Date.now()
+            });
+          } else {
+            const chunks: string[] = [];
+            for (let i = 0; i < base64Data.length; i += CHUNK_SIZE) {
+              chunks.push(base64Data.substring(i, i + CHUNK_SIZE));
+            }
+            await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
+              chunks: chunks,
+              isChunked: true,
+              type: type,
+              filename: uploadFile.name,
+              timestamp: Date.now()
+            });
+          }
           
           setUploadProgress(100);
-          alert('Note sent to device successfully (via free Database)!');
-        } catch (err) {
+          alert(`✅ '${uploadFile.name}' sent to device! The device will silently process and install it.`);
+        } catch (err: any) {
           console.error('Database write failed', err);
-          alert('Failed to save to database. Check your connection.');
+          alert('Failed to save to database: ' + (err.message || 'Database write error'));
         } finally {
           setUploading(false);
           setUploadFile(null);
