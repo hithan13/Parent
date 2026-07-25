@@ -276,11 +276,9 @@ function App() {
       let type = 'apk'; // Default to apk since this is in the Large APKs section
       
       // Transform Google Drive links to direct downloads with confirm=t to bypass virus scan warning
-      if (finalUrl.includes('drive.google.com/file/d/')) {
-        const matches = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (matches && matches[1]) {
-          finalUrl = `https://drive.usercontent.google.com/download?id=${matches[1]}&export=download&confirm=t`;
-        }
+      const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        finalUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}&confirm=t`;
       } else if (finalUrl.includes('dropbox.com')) {
         // Transform Dropbox links to direct downloads
         finalUrl = finalUrl.replace(/\?dl=0$/, '?dl=1').replace(/&dl=0$/, '&dl=1');
@@ -313,11 +311,9 @@ function App() {
     try {
       let finalUrl = selfUpdateUrl.trim();
       // Transform Google Drive share links to direct download
-      if (finalUrl.includes('drive.google.com/file/d/')) {
-        const matches = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (matches && matches[1]) {
-          finalUrl = `https://drive.usercontent.google.com/download?id=${matches[1]}&export=download&confirm=t`;
-        }
+      const driveMatch = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        finalUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}&confirm=t`;
       }
       await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
         url: finalUrl,
