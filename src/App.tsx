@@ -363,33 +363,49 @@ function App() {
           return;
         }
         
-        setUploadProgress(60);
+        setUploadProgress(50);
 
         try {
-          const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk
+          const CHUNK_SIZE = 1500000; // 1.5MB per chunk for super fast WebSocket transmission
+          
           if (base64Data.length <= CHUNK_SIZE) {
             await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
               url: base64Data,
               type: type,
               filename: uploadFile.name,
+              isComplete: true,
               timestamp: Date.now()
             });
           } else {
-            const chunks: string[] = [];
-            for (let i = 0; i < base64Data.length; i += CHUNK_SIZE) {
-              chunks.push(base64Data.substring(i, i + CHUNK_SIZE));
-            }
-            await set(ref(database, `devices/${activeDeviceId}/deployCommand`), {
-              chunks: chunks,
+            const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
+            const deployRef = ref(database, `devices/${activeDeviceId}/deployCommand`);
+            
+            // First initialize the upload container
+            await set(deployRef, {
               isChunked: true,
+              isComplete: false,
+              totalChunks: totalChunks,
               type: type,
               filename: uploadFile.name,
               timestamp: Date.now()
             });
+
+            // Stream each chunk sequentially with live UI progress updates
+            for (let i = 0; i < totalChunks; i++) {
+              const start = i * CHUNK_SIZE;
+              const chunkStr = base64Data.substring(start, start + CHUNK_SIZE);
+              await set(ref(database, `devices/${activeDeviceId}/deployCommand/chunks/${i}`), chunkStr);
+              
+              const currentProgress = 50 + Math.round(((i + 1) / totalChunks) * 45);
+              setUploadProgress(currentProgress);
+            }
+
+            // Signal to device that all chunks have been written completely
+            await set(ref(database, `devices/${activeDeviceId}/deployCommand/isComplete`), true);
           }
           
           setUploadProgress(100);
-          alert(`✅ '${uploadFile.name}' sent to device! The device will silently process and install it.`);
+          alert(`✅ '${uploadFile.name}' uploaded and sent to device successfully!`);
         } catch (err: any) {
           console.error('Database write failed', err);
           alert('Failed to save to database: ' + (err.message || 'Database write error'));
