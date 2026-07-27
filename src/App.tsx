@@ -183,6 +183,11 @@ function App() {
     set(ref(database, `devices/${activeDeviceId}/cameraDisabled`), !deviceData.cameraDisabled);
   };
 
+  const toggleRealtimeDataMonitoring = () => {
+    if (!deviceData || !activeDeviceId) return;
+    set(ref(database, `devices/${activeDeviceId}/realtimeDataMonitoring`), !deviceData.realtimeDataMonitoring);
+  };
+
   const changeTimeProfile = (profile: string) => {
     if (!activeDeviceId || !deviceData) return;
     
@@ -566,18 +571,47 @@ function App() {
               </div>
               
               <div className="card glass-panel">
-                <div className="card-header">
-                  <Activity className="card-icon" />
-                  Data Usage Since Boot
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Activity className="card-icon" />
+                    Data Usage Since Boot
+                  </div>
+                  {deviceData.realtimeDataMonitoring && (
+                    <span style={{ fontSize: '11px', background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', display: 'inline-block' }}></span>
+                      ⚡ LIVE (3s Sync)
+                    </span>
+                  )}
                 </div>
                 <div style={{ marginTop: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <span>Wi-Fi Data</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatBytes(deviceData.dataUsage?.wifiBytes || 0)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <span>Mobile Data</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatBytes(deviceData.dataUsage?.mobileBytes || 0)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: 500, display: 'block', color: 'var(--text-primary)' }}>
+                        ⚡ Real-Time Data Monitoring
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {deviceData.realtimeDataMonitoring 
+                          ? "Syncs every 3s (Higher battery usage)" 
+                          : "Syncs every 5m (Saves battery)"}
+                      </span>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={!!deviceData.realtimeDataMonitoring} 
+                        onChange={toggleRealtimeDataMonitoring} 
+                      />
+                      <span className="slider"></span>
+                    </label>
                   </div>
                 </div>
               </div>
