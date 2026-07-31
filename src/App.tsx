@@ -482,6 +482,56 @@ function App() {
     set(ref(database, `devices/${activeDeviceId}/allowedApps/${fbKey}`), newState);
   };
 
+  const prohibitAllApps = () => {
+    if (!deviceData || !activeDeviceId || !deviceData.installedApps) return;
+    const currentProfile = deviceData.timeProfile || 'Evening';
+    const profileNode = deviceData.profiles?.[currentProfile] || {};
+    const isNewStructure = 'apps' in profileNode || 'wifiEnabled' in profileNode || 'cameraDisabled' in profileNode || 'kioskModeEnabled' in profileNode;
+    
+    const appsMap: Record<string, boolean> = {};
+    Object.keys(deviceData.installedApps).forEach(fbKey => {
+      appsMap[fbKey] = false;
+    });
+
+    if (!isNewStructure) {
+      set(ref(database, `devices/${activeDeviceId}/profiles/${currentProfile}`), {
+        apps: appsMap,
+        wifiEnabled: true,
+        cameraDisabled: false,
+        kioskModeEnabled: false,
+        screenTimeLimit: -1
+      });
+    } else {
+      set(ref(database, `devices/${activeDeviceId}/profiles/${currentProfile}/apps`), appsMap);
+    }
+    set(ref(database, `devices/${activeDeviceId}/allowedApps`), appsMap);
+  };
+
+  const allowAllApps = () => {
+    if (!deviceData || !activeDeviceId || !deviceData.installedApps) return;
+    const currentProfile = deviceData.timeProfile || 'Evening';
+    const profileNode = deviceData.profiles?.[currentProfile] || {};
+    const isNewStructure = 'apps' in profileNode || 'wifiEnabled' in profileNode || 'cameraDisabled' in profileNode || 'kioskModeEnabled' in profileNode;
+    
+    const appsMap: Record<string, boolean> = {};
+    Object.keys(deviceData.installedApps).forEach(fbKey => {
+      appsMap[fbKey] = true;
+    });
+
+    if (!isNewStructure) {
+      set(ref(database, `devices/${activeDeviceId}/profiles/${currentProfile}`), {
+        apps: appsMap,
+        wifiEnabled: true,
+        cameraDisabled: false,
+        kioskModeEnabled: false,
+        screenTimeLimit: -1
+      });
+    } else {
+      set(ref(database, `devices/${activeDeviceId}/profiles/${currentProfile}/apps`), appsMap);
+    }
+    set(ref(database, `devices/${activeDeviceId}/allowedApps`), appsMap);
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -667,11 +717,38 @@ function App() {
           <>
             <div className="header">
               <h1>App Management</h1>
-              <p>Control which apps are visible and allowed on the device</p>
+              <p>Strictly prohibit & control which apps are visible on the child device</p>
             </div>
+
+            <div className="card glass-panel" style={{ marginBottom: '20px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '20px' }}>🔒</span>
+                <div>
+                  <h4 style={{ margin: 0, color: '#f87171', fontWeight: 600 }}>Strict Prohibit Mode Enforced</h4>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    All apps are <strong>strictly hidden and prohibited by default</strong> on the child's device. Only apps toggled ON (green) below will be visible and launcher-accessible.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="card glass-panel">
-              <div className="card-header" style={{ marginBottom: '20px' }}>
-                Allowed Apps ({deviceData.timeProfile} Profile)
+              <div className="card-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Allowed Apps ({deviceData.timeProfile || 'Active'} Profile)</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={prohibitAllApps}
+                    style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    🚫 Prohibit All
+                  </button>
+                  <button 
+                    onClick={allowAllApps}
+                    style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    ✅ Allow All
+                  </button>
+                </div>
               </div>
               <div className="app-list">
                 {deviceData.installedApps ? Object.entries(deviceData.installedApps).map(([fbKey, appName]) => (
@@ -680,7 +757,10 @@ function App() {
                       <div style={{ width: '32px', height: '32px', background: '#3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
                         {String(appName).charAt(0).toUpperCase()}
                       </div>
-                      <span>{String(appName)}</span>
+                      <div>
+                        <span style={{ fontWeight: 500 }}>{String(appName)}</span>
+                        <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)' }}>{fbKey.replace(/_/g, '.')}</span>
+                      </div>
                     </div>
                     <label className="toggle-switch">
                       <input 
