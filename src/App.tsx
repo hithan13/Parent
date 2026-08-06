@@ -188,6 +188,12 @@ function App() {
     set(ref(database, `devices/${activeDeviceId}/realtimeDataMonitoring`), !deviceData.realtimeDataMonitoring);
   };
 
+  const triggerMediaCleanup = () => {
+    if (!activeDeviceId) return;
+    set(ref(database, `devices/${activeDeviceId}/triggerCleanup`), Date.now());
+    alert("🧹 Cleanup command sent! The device will immediately purge all media and files older than 7 days from disk & gallery.");
+  };
+
   const changeTimeProfile = (profile: string) => {
     if (!activeDeviceId || !deviceData) return;
     
@@ -667,9 +673,17 @@ function App() {
               </div>
 
               <div className="card glass-panel" style={{ gridColumn: '1 / -1' }}>
-                <div className="card-header">
-                  <Calendar className="card-icon" />
-                  Daily Data Usage History
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar className="card-icon" />
+                    Daily Data Usage History
+                  </div>
+                  <button 
+                    onClick={triggerMediaCleanup}
+                    style={{ padding: '6px 14px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🧹 Run 7-Day Storage Cleanup Now
+                  </button>
                 </div>
                 <div style={{ marginTop: '10px', overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '400px' }}>
