@@ -194,6 +194,16 @@ function App() {
     alert("🧹 Cleanup command sent! The device will immediately purge all media and files older than 7 days from disk & gallery.");
   };
 
+  const setDailyDataLimit = (limitMb: number) => {
+    if (!activeDeviceId) return;
+    set(ref(database, `devices/${activeDeviceId}/dailyDataLimitMb`), limitMb);
+    if (limitMb > 0) {
+      alert(`📶 Daily Data Limit set to ${limitMb >= 1024 ? (limitMb / 1024).toFixed(1) + ' GB' : limitMb + ' MB'}. Internet will automatically turn off when the child exceeds this data limit.`);
+    } else {
+      alert("📶 Daily Data Limit disabled.");
+    }
+  };
+
   const changeTimeProfile = (profile: string) => {
     if (!activeDeviceId || !deviceData) return;
     
@@ -611,17 +621,78 @@ function App() {
               </div>
 
               <div className="card glass-panel">
-                <div className="card-header">
-                  <Wifi className="card-icon" />
-                  Network Control
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Wifi className="card-icon" />
+                    Network & Data Limit Control
+                  </div>
+                  {deviceData.dataLimitReached && (
+                    <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                      🔴 DATA LIMIT REACHED
+                    </span>
+                  )}
                 </div>
                 <div style={{ marginTop: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <span>Internet Access</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div>
+                      <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>Internet Access</span>
+                      {deviceData.dataLimitReached && (
+                        <span style={{ display: 'block', fontSize: '11px', color: '#f87171', marginTop: '2px' }}>
+                          Auto-disabled (Daily data limit exceeded)
+                        </span>
+                      )}
+                    </div>
                     <label className="toggle-switch">
                       <input type="checkbox" checked={deviceData.wifiEnabled} onChange={toggleWifi} />
                       <span className="slider"></span>
                     </label>
+                  </div>
+
+                  <div style={{ paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        📊 Daily Data Limit (Auto Cut-off)
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--primary-light)', fontWeight: 600 }}>
+                        {deviceData.dailyDataLimitMb > 0 
+                          ? (deviceData.dailyDataLimitMb >= 1024 
+                              ? `${(deviceData.dailyDataLimitMb / 1024).toFixed(1)} GB` 
+                              : `${deviceData.dailyDataLimitMb} MB`) 
+                          : 'No Limit'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {[
+                        { label: 'Off', value: -1 },
+                        { label: '250 MB', value: 250 },
+                        { label: '500 MB', value: 500 },
+                        { label: '1 GB', value: 1024 },
+                        { label: '2 GB', value: 2048 },
+                        { label: '5 GB', value: 5120 }
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setDailyDataLimit(opt.value)}
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            borderRadius: '6px',
+                            border: (deviceData.dailyDataLimitMb || -1) === opt.value 
+                              ? '1px solid var(--primary)' 
+                              : '1px solid rgba(255,255,255,0.1)',
+                            background: (deviceData.dailyDataLimitMb || -1) === opt.value 
+                              ? 'var(--primary)' 
+                              : 'rgba(255,255,255,0.05)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontWeight: (deviceData.dailyDataLimitMb || -1) === opt.value ? 600 : 400
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
